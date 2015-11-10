@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 from base import Endpoint
 
 __all__ = ['ServerEndpoint']
@@ -22,14 +23,14 @@ class ServerEndpoint( Endpoint ):
         if 1 > len( server_list ):
             raise ValueError( 'empty server_list not allowed' )
 
-        data = { 'id': ','.join( server_list ),
+        data = { 'id': '%s' % ','.join( server_list ),
                 'volume_name': volume_name,
                 'access_type': access_type,
                 'readonly': readonly,
                 'force': force }
 
         r = client.post( 'api/servers/{0}/volumes.json'.format( server_list[0] ),
-                data=json.dumps( data ) )
+                params=data )
         if 'response' in r.keys():
             status = int( r['response']['status'] )
             if 0 == status:

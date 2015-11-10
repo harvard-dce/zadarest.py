@@ -11,6 +11,8 @@ import json
 import requests
 from urlparse import urljoin
 
+import logging
+
 def handle_http_exceptions( callbacks={} ):
     def wrapper( f ):
         def newfunc( *args, **kwargs ):
@@ -21,10 +23,11 @@ def handle_http_exceptions( callbacks={} ):
                 req = e.request
                 if resp.status_code == 404:
                     print >>sys.stderr, "endpoint not found at %s. " % req.url \
-                            + "perharps it is not available on this node?"
+                            + "perhaps it is not available on this node?"
                 elif resp.status_code == 401:
                     print >>sys.stderr, "access denied: %s" % e
                 else:
+                    print >>sys.stderr, "response status %d: %s --- %s" % ( resp.status_code, e, resp.text )
                     for code, handler in callbacks.items():
                         if resp.status_code == code:
                             handler( e )
@@ -37,8 +40,8 @@ class MyRESTClientError(Exception):
     """
 
     def __init__( self, value, msg ):
-        self.value = unicode( value, 'utf-8' )
-        self.message = unicode( msg, 'utf-8' )
+        self.value = '%s' % value
+        self.message = msg
 
     def __str__( self ):
         return "error(%s): %s" % ( self.value, self.message )
@@ -63,9 +66,9 @@ class MyRESTClient( object ):
         if mode == 'get':
             resp = requests.get( url, params=params, headers=headers )
         elif mode == 'post':
-            resp = requests.post( url, params=params, headers=headers )
+            resp = requests.post( url, data=json.dumps(params), headers=headers )
         elif mode == 'put':
-            resp = requests.put( url, params=params, headers=headers )
+            resp = requests.put( url, data=json.dumps(params), headers=headers )
         elif mode == 'delete':
             resp = requests.delete( url, params=params, headers=headers )
         else:
@@ -76,6 +79,11 @@ class MyRESTClient( object ):
 
 
     def send_request( self, mode, path, params={}, extra_headers={} ):
+
+        log = logging.getLogger()
+        log.debug( '### send_request: mode=%s, path=%s, params=%s, extra_headers=%s' %
+                (mode, path, params, extra_headers) )
+
         r = self.send_request_without_response_check( mode, path, params, extra_headers )
         if 'response' in r.keys():
             status = int( r['response']['status'] )

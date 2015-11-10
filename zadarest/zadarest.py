@@ -132,29 +132,27 @@ class ZVpsaClient( MyRESTClient ):
             which vpsa to manage; if more than one is present, the first in this order
             will be used: 1. vpsa_id, 2. url, 3. export_path
         """
-        MyRESTClient.__init__( self, url, vpsa_token )
         self._console_client = console_client
-        self.vpsa_id = int( vpsa_id )
 
-        if self.vpsa_id > 0:
-            v = console_client.vpsa_by_id( self.vpsa_id )
+        if vpsa_id > 0:
+            v = console_client.vpsa_by_id( vpsa_id )
             if not v:
-                raise MyRESTClientError('100', 'vpsa (%s) not found.' % self.vpsa_id )
-            self.url = v['management_url']
+                raise MyRESTClientError('100', 'vpsa (%s) not found.' % vpsa_id )
+            self.info = v
 
-        elif self.url is not None:
-            v = console_client.vpsa_by_url( self.url )
+        elif url is not None:
+            v = console_client.vpsa_by_url( url )
             if not v:
                 raise MyRESTClientError('101', 'vpsa with url (%s) not found.' % self.url )
-            self.vpsa_id = int( v['id'] )
+            self.info = v
 
         elif export_path is not None:
             v = console_client.vpsa_by_export_path( export_path, vpsa_token )
             if not v:
                 raise MyRESTClientError('102', 'vpsa with export_path (%s) not found.' % export_path )
-            self.vpsa_id = int( v['id'] )
-            self.url = v['management_url']
+            self.info = v
 
+        MyRESTClient.__init__( self, self.info['management_url'], vpsa_token )
 
 
     @handle_http_exceptions()
@@ -191,7 +189,7 @@ class ZVpsaClient( MyRESTClient ):
 
     @handle_http_exceptions()
     def get_snapshots_for_cgroup(self, cgroup):
-        return VolumeEndpoint.snapshots( self )
+        return VolumeEndpoint.snapshots( self, cgroup )
 
 
     @handle_http_exceptions()
@@ -211,15 +209,14 @@ class ZVpsaClient( MyRESTClient ):
 
     @handle_http_exceptions()
     def detach_volume_from_all_servers(self, volume_name):
-        servers = self.get_all_servers( volume_name )
+        servers = self.get_all_servers_for_volume( volume_name )
 
         s_list = []
         for s in servers:
             s_list.append( s['name'] )
-        server_list = {'servers': ','.join( s_list )}
 
         # detach from all servers
-        return VolumeEndpoint.detach_servers( self, volume_name, server_list )
+        return VolumeEndpoint.detach_servers( self, volume_name, s_list )
 
 
     @handle_http_exceptions()

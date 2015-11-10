@@ -2,7 +2,7 @@ import os
 os.environ['TESTING'] = 'True'
 
 
-from pyz.rest_client import MyRESTClient
+from zadarest.rest_client import MyRESTClient
 
 
 rest_service_url = 'https://fake.example.edu'

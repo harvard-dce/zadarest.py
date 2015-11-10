@@ -55,7 +55,7 @@ class TestZVpsaClient( object ):
         vpsa_c = ZVpsaClient( self.c, vpsa_token='vpsa_token_1234',
                 export_path='10.0.0.10/export/volume_00000003')
 
-        vpsa_c.vpsa_id.must.be.equal( 125 )
+        vpsa_c.info['id'].must.be.equal( 125 )
 
 
     @httpretty.activate
@@ -69,7 +69,7 @@ class TestZVpsaClient( object ):
                 url='https://vpsa-00000003-aws2.zadaravpsa.com',
                 export_path='10.0.0.10/export/volume_00000003')
 
-        vpsa_c.vpsa_id.must.be.equal( 3 )
+        vpsa_c.info['id'].must.be.equal( 3 )
 
 
     @httpretty.activate
@@ -85,7 +85,7 @@ class TestZVpsaClient( object ):
                 url='https://vpsa-00000003-aws2.zadaravpsa.com',
                 export_path='10.0.0.10/export/volume_00000003')
 
-        vpsa_c.vpsa_id.must.be.equal( vpsa_id )
+        vpsa_c.info['id'].must.be.equal( vpsa_id )
 
 
     @httpretty.activate
