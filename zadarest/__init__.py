@@ -2,8 +2,10 @@
 
 __version__ = '0.1.0'
 
-from zadarest import ZConsoleClient, ZVpsaClient
-from rest_client import MyRESTClient, MyRESTClientError
+from zadarest import ZRestClient
+from zadarest import ZError
+from zadarest import ZConsoleClient
+from zadarest import ZVpsaClient
 
 
 

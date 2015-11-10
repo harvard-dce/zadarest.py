@@ -30,9 +30,6 @@ class TestServerEndpoint(EndpointTestCase):
 
 
 
-#        with pytest.raises( ZadaraVpsaError ) as e:
-#        e.should.have.property
-
 
 
 

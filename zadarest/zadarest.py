@@ -10,14 +10,107 @@ import sys
 import time
 import json
 import requests
-from rest_client import *
+from urlparse import urljoin
+
+import logging
+
 from endpoints import *
 
 
-class ZConsoleClient( MyRESTClient ):
+def handle_http_exceptions( callbacks={} ):
+    def wrapper( f ):
+        def newfunc( *args, **kwargs ):
+            try:
+                return f( *args, **kwargs )
+            except requests.HTTPError, e:
+                resp = e.response
+                req = e.request
+                if resp.status_code in callbacks.keys():
+                    callbacks[ resp.status_code ]( e )
+                else:
+                    raise
+            except Exception, e:
+                raise
+        return newfunc
+    return wrapper
+
+
+class ZError(Exception):
+    """ generic handler for zadara vpsa rest api errors
+    """
+
+    def __init__( self, value, msg ):
+        self.value = '%s' % value
+        self.message = msg
+
+    def __str__( self ):
+        return "error(%s): %s" % ( self.value, self.message )
+
+
+class ZRestClient( object ):
 
     def __init__( self, url, token ):
-        MyRESTClient.__init__( self, url, token )
+        self.token = token
+        self.url = url
+        self.default_headers = { 'Content-Type': 'application/json', 'X-Token': self.token }
+
+    def send_request_without_response_check( self, mode, path, params={}, extra_headers={} ):
+        """ rest api for vpsa operations (cloud console) returns json response
+            without 'status' key, only a message.
+            use this method that does not expect response.status in the returned json
+        """
+        headers = self.default_headers.copy()
+        headers.update( extra_headers )
+        url = urljoin( self.url, path )
+        if mode == 'get':
+            resp = requests.get( url, params=params, headers=headers )
+        elif mode == 'post':
+            resp = requests.post( url, data=json.dumps(params), headers=headers )
+        elif mode == 'put':
+            resp = requests.put( url, data=json.dumps(params), headers=headers )
+        elif mode == 'delete':
+            resp = requests.delete( url, params=params, headers=headers )
+        else:
+            pass
+
+        resp.raise_for_status()
+        return resp.json()
+
+
+    def send_request( self, mode, path, params={}, extra_headers={} ):
+
+        log = logging.getLogger(__name__)
+        log.debug( 'send_request: mode=%s, path=%s, params=%s, extra_headers=%s' %
+                (mode, path, params, extra_headers) )
+
+        r = self.send_request_without_response_check( mode, path, params, extra_headers )
+        if 'response' in r.keys():
+            status = int( r['response']['status'] )
+            if 0 == status:
+                return r
+            raise ZError( status, r['response']['message'] )
+        raise ZError( 1, 'response to %s invalid, json missing "response" key' )
+
+
+    def get( self, path, params={}, extra_headers={} ):
+        return self.send_request( 'get', path, params, extra_headers )
+
+    def post( self, path, params={}, extra_headers={} ):
+        return self.send_request( 'post', path, params, extra_headers )
+
+    def put( self, path, params={}, extra_headers={} ):
+        return self.send_request( 'put', path, params, extra_headers )
+
+    def delete( self, path, params={}, extra_headers={} ):
+        return self.send_request( 'delete', path, params, extra_headers )
+
+
+
+
+class ZConsoleClient( ZRestClient ):
+
+    def __init__( self, url, token ):
+        ZRestClient.__init__( self, url, token )
 
 
     @handle_http_exceptions()
@@ -58,8 +151,17 @@ class ZConsoleClient( MyRESTClient ):
 
 
     @handle_http_exceptions()
-    def hibernate( self, vpsa_id ):
-        return VpsaEndpoint.hibernate( self, vpsa_id )
+    def hibernate( self, vpsa_id, max_tries=5, timeout_in_secs=15 ):
+        if self.is_vpsa_down( vpsa_id ):
+            return True
+
+        VpsaEndpoint.hibernate( self, vpsa_id )
+        n_tries = 0
+        vpsa_down = self.is_vpsa_down( vpsa_id )
+        while not vpsa_down and n_tries < max_tries:
+            time.sleep( timeout_in_sec )
+            vpsa_down = self.is_vpsa_down( vpsa_id )
+        return vpsa_down
 
 
     @handle_http_exceptions()
@@ -69,9 +171,11 @@ class ZConsoleClient( MyRESTClient ):
 
         VpsaEndpoint.restore( self, vpsa_id )
         n_tries = 0
-        while ( not self.is_vpsa_up( vpsa_id ) ) and n_tries < max_tries:
+        vpsa_up = self.is_vpsa_up( vpsa_id )
+        while not vpsa_up and n_tries < max_tries:
             time.sleep( timeout_in_sec )
-        return True if n_tries < max_tries else False
+            vpsa_up = self.is_vpsa_up( vpsa_id )
+        return vpsa_up
 
 
     @handle_http_exceptions()
@@ -124,7 +228,7 @@ class ZConsoleClient( MyRESTClient ):
         return None
 
 
-class ZVpsaClient( MyRESTClient ):
+class ZVpsaClient( ZRestClient ):
 
     def __init__( self, console_client, vpsa_token, vpsa_id=0, url=None, export_path=None ):
         """ console_client is required to check if vpsa is in 'hibernate' status
@@ -137,22 +241,22 @@ class ZVpsaClient( MyRESTClient ):
         if vpsa_id > 0:
             v = console_client.vpsa_by_id( vpsa_id )
             if not v:
-                raise MyRESTClientError('100', 'vpsa (%s) not found.' % vpsa_id )
+                raise ZError('100', 'vpsa (%s) not found.' % vpsa_id )
             self.info = v
 
         elif url is not None:
             v = console_client.vpsa_by_url( url )
             if not v:
-                raise MyRESTClientError('101', 'vpsa with url (%s) not found.' % self.url )
+                raise ZError('101', 'vpsa with url (%s) not found.' % self.url )
             self.info = v
 
         elif export_path is not None:
             v = console_client.vpsa_by_export_path( export_path, vpsa_token )
             if not v:
-                raise MyRESTClientError('102', 'vpsa with export_path (%s) not found.' % export_path )
+                raise ZError('102', 'vpsa with export_path (%s) not found.' % export_path )
             self.info = v
 
-        MyRESTClient.__init__( self, self.info['management_url'], vpsa_token )
+        ZRestClient.__init__( self, self.info['management_url'], vpsa_token )
 
 
     @handle_http_exceptions()
@@ -243,7 +347,7 @@ class ZVpsaClient( MyRESTClient ):
             i += 1
 
         if clone_cg is None:
-            raise MyRESTClientError( 1, "not able to check that volume was cloned" )
+            raise ZError( 1, "not able to check that volume was cloned" )
 
         return cloned_volume
 
@@ -257,21 +361,12 @@ class ZVpsaClient( MyRESTClient ):
     def get_snapshot_policies_for_cgroup( self, cgroup_name ):
         return VolumeEndpoint.snapshot_policies( self, cgroup_name )
 
+
     @handle_http_exceptions()
     def attach_snapshot_policy_to_cgroup( self, cgroup_name, snapshot_policy_name ):
         return VolumeEndpoint.attach_snapshot_policy( self, cgroup_name,
                 snapshot_policy_name )
 
-    @handle_http_exceptions()
-    def attach_daily_weekly_snapshot_policies_to_cgroup( self, cgroup_name ):
-        policies = self.get_all_snapshot_policies()
-        for p in policies:
-            if 'Daily' in p['display_name']:
-                VolumeEndpoint.attach_snapshot_policy( self, cgroup_name, p['name'] )
-                continue
-            if 'Weekly' in p['display_name']:
-                VolumeEndpoint.attach_snapshot_policy( self, cgroup_name, p['name'] )
-                continue
 
     @handle_http_exceptions()
     def get_all_snapshot_policies( self ):

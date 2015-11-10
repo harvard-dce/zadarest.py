@@ -10,12 +10,7 @@ class ServerEndpoint( Endpoint ):
     @classmethod
     def servers( cls, client ):
         r = client.get('api/servers.json')
-        if 'response' in r.keys():
-            status = int( r['response']['status'] )
-            if 0 == status:
-                return r['response']['servers']
-            raise ZadaraVpsaError( status, r['response']['message'] )
-        raise ZadaraVpsaError( 1, 'servers() json missing "response" key' )
+        return r['response']['servers']
 
     @classmethod
     def attach_volume( cls, client, server_list, volume_name,
@@ -31,11 +26,6 @@ class ServerEndpoint( Endpoint ):
 
         r = client.post( 'api/servers/{0}/volumes.json'.format( server_list[0] ),
                 params=data )
-        if 'response' in r.keys():
-            status = int( r['response']['status'] )
-            if 0 == status:
-                return server_list
-            raise ZadaraVpsaError( status, r['response']['message'] )
-        raise ZadaraVpsaError( 1, 'attach_volume() json missing "response" key' )
+        return server_list
 
 
