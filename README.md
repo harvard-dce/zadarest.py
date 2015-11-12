@@ -11,11 +11,13 @@ python client library for accessing Zadara API
 installation
 ------------
 
+pip install zadarest
 
 
 usage
 -----
 
+see example of volume cloning at https://github.com/harvard-dce/mh-backup
 
 
 license
