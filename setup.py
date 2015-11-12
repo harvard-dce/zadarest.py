@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 import os
 import re
@@ -45,7 +42,7 @@ setup(
     author="naomi maekawa",
     author_email='nmaekawa@g.harvard.edu',
     url='https://github.com/nmaekawa/zadarest',
-    packages=[ 'zadarest' ],
+    packages=find_packages(exclude=["docs", "tests*"]),
     package_dir={'zadarest': 'zadarest'},
     include_package_data=True,
     keywords='zadarest',
