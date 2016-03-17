@@ -17,7 +17,9 @@ import logging
 from endpoints import *
 
 
-def handle_http_exceptions( callbacks={} ):
+def handle_http_exceptions( callbacks=None ):
+    if callbacks is None:
+        callbacks = {}
     def wrapper( f ):
         def newfunc( *args, **kwargs ):
             try:
@@ -77,7 +79,12 @@ class ZRestClient( object ):
         return resp.json()
 
 
-    def send_request( self, mode, path, params={}, extra_headers={} ):
+    def send_request( self, mode, path, params=None, extra_headers=None ):
+
+        if params is None:
+            params = {}
+        if extra_headers is None:
+            extra_headers = {}
 
         log = logging.getLogger(__name__)
         log.debug( 'send_request: mode=%s, path=%s, params=%s, extra_headers=%s' %
@@ -92,16 +99,32 @@ class ZRestClient( object ):
         raise ZError( 1, 'response to %s invalid, json missing "response" key' )
 
 
-    def get( self, path, params={}, extra_headers={} ):
+    def get( self, path, params=None, extra_headers=None ):
+        if params is None:
+            params = {}
+        if extra_headers is None:
+            extra_headers = {}
         return self.send_request( 'get', path, params, extra_headers )
 
-    def post( self, path, params={}, extra_headers={} ):
+    def post( self, path, params=None, extra_headers=None ):
+        if params is None:
+            params = {}
+        if extra_headers is None:
+            extra_headers = {}
         return self.send_request( 'post', path, params, extra_headers )
 
-    def put( self, path, params={}, extra_headers={} ):
+    def put( self, path, params=None, extra_headers=None ):
+        if params is None:
+            params = {}
+        if extra_headers is None:
+            extra_headers = {}
         return self.send_request( 'put', path, params, extra_headers )
 
-    def delete( self, path, params={}, extra_headers={} ):
+    def delete( self, path, params=None, extra_headers=None ):
+        if params is None:
+            params = {}
+        if extra_headers is None:
+            extra_headers = {}
         return self.send_request( 'delete', path, params, extra_headers )
 
 
