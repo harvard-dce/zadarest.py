@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.2.2'
+import pkg_resources  # part of setuptools
+__version__ = pkg_resources.require("zadarest")[0].version
 
 from zadarest import ZRestClient
 from zadarest import ZError

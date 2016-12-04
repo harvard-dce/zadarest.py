@@ -1,61 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python
 
-from setuptools import setup, find_packages
-from pip.req import parse_requirements
-import os
-import re
-import codecs
-def read_version():
-    version_file = codecs.open(
-            os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
-                'zadarest/__init__.py'),
-            'r', 'utf-8' ).read()
-    return re.search( r"^__version__ = ['\"]([^'\"]*)['\"]",
-            version_file, re.M ).group(1)
-
-version = read_version()
-
-
-with open('README.md') as readme_file:
-    readme = readme_file.read()
-
-with open('HISTORY.md') as history_file:
-    history = history_file.read().replace('.. :changelog:', '')
-
-requirements_generator = parse_requirements('requirements.txt', session='hack')
-requirements = [str(ir.req) for ir in requirements_generator]
-test_requirements_generator = parse_requirements('test_requirements.txt', session='hack')
-test_requirements = [str(ir.req) for ir in test_requirements_generator]
+from setuptools import setup
 
 setup(
-    name='zadarest',
-    version=version,
-    description="python client library for accessing Zadara API",
-    long_description=readme + '\n\n' + history,
-    author="naomi maekawa",
-    author_email='nmaekawa@g.harvard.edu',
-    url='https://github.com/nmaekawa/zadarest',
-    packages=find_packages(exclude=["docs", "tests*"]),
-    package_dir={'zadarest': 'zadarest'},
-    include_package_data=True,
-    keywords='zadarest',
-    license='Apache 2.0',
-    classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: Apache Software License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7'
-    ],
-    install_requires=requirements,
-    tests_require=test_requirements,
-    zip_safe=False,
+    setup_requires=['pbr>=1.9', 'setuptools>=17.1'],
+    pbr=True,
 )
-
-
-
-
-
