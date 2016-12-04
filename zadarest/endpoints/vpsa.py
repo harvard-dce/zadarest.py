@@ -26,7 +26,7 @@ class VpsaEndpoint(Endpoint):
 
     @classmethod
     def hibernate(cls, client, vpsa_id):
-        h = { 'Content-Length': 0 }
+        h = { 'Content-Length': '0' }
         resp = client.send_request_without_response_check(
                 'post',
                 'api/vpsas/%d/hibernate.json' % vpsa_id,
@@ -38,7 +38,7 @@ class VpsaEndpoint(Endpoint):
 
     @classmethod
     def restore(cls, client, vpsa_id):
-        h = { 'Content-Length': 0 }
+        h = { 'Content-Length': '0' }
         resp = client.send_request_without_response_check(
                 'post',
                 '/api/vpsas/%d/restore.json' % vpsa_id,
