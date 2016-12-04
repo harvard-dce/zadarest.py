@@ -1,0 +1,2 @@
+pip
+requests==2.10.0
