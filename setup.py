@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
-
+from pip.req import parse_requirements
 import os
 import re
 import codecs
@@ -24,15 +24,10 @@ with open('README.md') as readme_file:
 with open('HISTORY.md') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
-requirements = [
-    "requests"
-]
-
-test_requirements = [
-    "pytest",
-    "httpretty",
-    "sure"
-]
+requirements_generator = parse_requirements('requirements.txt', session='hack')
+requirements = [str(ir.req) for ir in requirements_generator]
+test_requirements_generator = parse_requirements('test_requirements.txt', session='hack')
+test_requirements = [str(ir.req) for ir in test_requirements_generator]
 
 setup(
     name='zadarest',
